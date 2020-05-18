@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RSAGUI", "RSAGUI\RSAGUI.vcxproj", "{CB8A1E88-C7AD-4E45-B16A-A9CBC29AA72B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CB8A1E88-C7AD-4E45-B16A-A9CBC29AA72B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CB8A1E88-C7AD-4E45-B16A-A9CBC29AA72B}.Debug|Win32.Build.0 = Debug|Win32
+		{CB8A1E88-C7AD-4E45-B16A-A9CBC29AA72B}.Release|Win32.ActiveCfg = Release|Win32
+		{CB8A1E88-C7AD-4E45-B16A-A9CBC29AA72B}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,279 @@
+Microsoft (R) Macro Assembler Version 14.16.27026.1	    12/04/19 20:09:59
+C:\Users\Dell\Desktop\coal-project-master\RSAGUI\Rsa.asm     Page 1 - 1
+
+
+				.686 ;Target processor. Use instructions for Pentium class machines
+				.MODEL FLAT, C ;Use the flat memory model. Use C calling conventions
+				;INCLUDE Irvine32.inc
+				.STACK 2048 ;Define a stack segment of 1KB (Not required for this example)
+				GetEncryptedData PROTO C , data : SDWORD , D :SDWORD , N : SDWORD;
+				
+				
+				
+				TRYERROR PROTO C , D : SDWORD  , N :SDWORD ,  Data : SDWORD
+				gcd PROTO C  ,  A :SDWORD ,  H : SDWORD 
+				powerP PROTO C , D : SDWORD  , N :SDWORD ,  Data : SDWORD
+ = 00000008			OUT_WIDTH = 8
+ = 0000000A			ENDING_POWER = 10
+				
+ 00000000			.data
+ 00000000 00000000			P DWORD ?		;first prime
+ 00000004 00000000			Q DWORD ?		;second prime
+ 00000008 00000000			N DWORD ?		;stores the product of two primes
+ 0000000C 00000000			E DWORD ?		;exponent which is not a factor of N
+ 00000010 00000000			D DWORD ?		;private key
+ 00000014 00000000			DataTobeProcessed DWORD ?
+ 00000018 00000000			PHAYI DWORD  ?  ;(P-1)(Q-1)
+ 0000001C 00000000			TestData DWORD ?
+ 00000020 00000000			Testval  DWORD ?
+ 00000024 00000000			EncryptedData DWORD ?
+ 00000028 00000000			PlainText DWORD ?
+				
+				
+				
+ 00000000			.CODE			;Indicates the start of a code segment.
+				
+ 00000000			FormulaForPrime PROC , val : DWORD			;this function randomly generate two prime numbers by using a generic formula (P and Q)
+ 00000003  8B 45 08			mov eax,  val							
+ 00000006  F7 E0			mul eax 
+ 00000008  03 45 08			add eax  ,  val 
+ 0000000B  83 C0 29			add eax  ,  41 
+					ret 
+				
+				
+ 00000010			FormulaForPrime ENDP
+				
+ 00000010			GCDCal PROC  , A : DWORD ,  B : DWORD
+ 00000013  BA 00000000			mov edx , 0  ;  
+ 00000018				L1:
+ 00000018  8B 45 08				mov eax ,  A
+ 0000001B  8B 5D 0C				mov ebx  , B
+ 0000001E  F7 F3				div ebx
+						
+ 00000020  83 FA 00				cmp edx  , 0 
+ 00000023  74 0B				je L2 
+				
+ 00000025  8B 5D 0C				mov ebx  ,  B
+ 00000028  89 5D 08				mov A , ebx
+ 0000002B  89 55 0C				mov B , edx
+ 0000002E  EB E8			JMP L1  
+				
+ 00000030				L2 :
+ 00000030  8B 45 0C				mov eax  ,  B
+						ret
+ 00000035			GCDCal ENDP
+				
+ 00000035			PublicKey PROC ,  val : DWORD , val1 :DWORD			;this function will generate the public key i.e E and N
+ 00000038  8B 45 08			mov eax  ,  val									;two arguements are passed which are two prime numbers
+ 0000003B  8B 5D 0C			mov ebx , val1 
+ 0000003E  F7 E3			mul ebx
+ 00000040  A3 00000008 R		mov N , eax 
+				
+ 00000045  8B 0D 00000018 R		mov ecx  , PHAYI 
+ 0000004B  BF 00000005			mov edi  ,  5  ;  
+ 00000050  B8 00000000			mov eax  , 0  
+ 00000055				L1 :
+						INVOKE gcd ,  edi , PHAYI 
+ 00000064  83 F8 01				cmp  eax  , 1 
+ 00000067  74 0B				je L2
+ 00000069  47					inc edi 
+ 0000006A  3B 3D 00000018 R			cmp edi  , PHAYI
+				
+ 00000070  7D 02				jnl L2
+				
+ 00000072  EB E1			JMP L1
+ 00000074				L2:
+ 00000074  89 3D 0000000C R		mov E ,  edi
+				
+					ret 
+				
+ 0000007C			PublicKey ENDP
+				
+				
+				
+ 0000007C			PrivateKey  PROC , valP : DWORD ,  valQ : DWORD ,  valE : DWORD			;this function will generate the private key i.e D
+																						;three arguements are passed to this functions, 2 primes
+ 0000007F  A1 00000018 R		mov eax , PHAYI   
+ 00000084  B9 00000002			mov ecx  ,  2
+ 00000089  F7 E1			mul ecx   ;  k =  2 k can be any prime number ranging from 1-10 although all the calculations here are done by taking k=2!
+ 0000008B  83 C0 01			add eax ,  1 
+ 0000008E  8B 5D 10			mov ebx  , valE
+ 00000091  F7 F3			div ebx 
+ 00000093  A3 00000010 R		mov D  ,  eax 
+				
+					ret
+				
+ 0000009A			PrivateKey  ENDP
+				
+				
+ 0000009A			Encryption PROC , valE : DWORD , valN : DWORD , Data : DWORD
+					
+ 0000009D  8B 45 10			mov eax , Data ; H = 8 
+					INVOKE powerP , valE , valN , eax 
+ 000000AF  A3 00000024 R		mov EncryptedData , eax
+				
+					
+					ret 
+ 000000B6			Encryption ENDP
+				
+				
+				
+ 000000B6			Decrypt PROC  , valD : DWORD ,  valN : DWORD , data : DWORD 
+				
+					INVOKE TRYERROR , valD , valN , data
+					ret
+ 000000CC			Decrypt ENDP
+				
+ 000000CC			CalculatePHAYI PROC , valP : DWORD , valQ:DWORD
+ 000000CF  8B 45 08			mov eax  ,  valP													;and an exponent
+ 000000D2  8B 5D 0C			mov ebx ,  valQ 
+				
+ 000000D5  83 E8 01			sub eax  , 1 
+ 000000D8  83 EB 01			sub ebx  ,  1 
+					
+					
+ 000000DB  F7 E3			mul ebx
+ 000000DD  A3 00000018 R		mov PHAYI ,  eax 
+				
+					ret
+ 000000E4			CalculatePHAYI ENDP
+				
+ 000000E4			fileProcessing Proc , Data : DWORD
+				
+ 000000E7  8B 45 08			mov eax  ,  Data
+ 000000EA  BB 00000020			mov ebx  ,  ' '
+ 000000EF  3B C3			cmp eax , ebx 
+ 000000F1  74 07			je L2 
+ 000000F3  A3 00000014 R		mov DataTobeProcessed ,  eax 
+					ret
+ 000000FA				L2:
+ 000000FA  B8 000000A0			mov eax  , 160
+ 000000FF  C7 05 00000014 R		mov DataTobeProcessed , 160
+	   000000A0
+					ret
+ 0000010B			fileProcessing ENDP
+				
+ 0000010B			Entrypoint PROC  ,  RandP : DWORD  , RandQ  :DWORD , Data :DWORD , Mode :DWORD			;Entry point function that initialize P and Q using randomize function
+ 0000010E  8B 45 08			mov eax  ,  RandP
+ 00000111  A3 00000000 R		mov P   ,  eax  
+ 00000116  8B 45 0C			mov eax  ,  RandQ
+ 00000119  A3 00000004 R		mov Q   ,  eax  
+					;INVOKE showChar ,  Data
+					INVOKE fileProcessing  , Data
+ 00000129  A1 00000014 R		mov eax, DataTobeProcessed
+ 0000012E  3D 000000A0			cmp eax , 160
+ 00000133  0F 84 0000009E		je L3
+ 00000139  8B 45 10			mov eax  , Data 
+ 0000013C  83 E8 69			sub eax , 105
+ 0000013F  89 45 10			mov Data  , eax 
+					
+					INVOKE CalculatePHAYI , P , Q
+					INVOKE PublicKey ,  P ,Q
+					INVOKE PrivateKey ,  P ,  Q , E
+ 00000184  83 7D 14 01			cmp Mode , 1
+ 00000188  74 33			je L1
+						INVOKE Encryption ,  E  ,N , Data
+						INVOKE GetEncryptedData , EncryptedData , D , N 
+ 000001BB  EB 30				jmp L4
+ 000001BD				L1:
+						INVOKE Decrypt ,  D  ,N , EncryptedData
+					
+ 000001D7				L3:
+						INVOKE GetEncryptedData , 32, D , N 
+ 000001ED				L4:
+						ret
+ 000001EF			Entrypoint ENDP
+				END
+Microsoft (R) Macro Assembler Version 14.16.27026.1	    12/04/19 20:09:59
+C:\Users\Dell\Desktop\coal-project-master\RSAGUI\Rsa.asm     Symbols 2 - 1
+
+
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00000800 Para	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000002C Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 000001EF Para	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+CalculatePHAYI . . . . . . . . .	P Near	 000000CC _TEXT	Length= 00000018 Public C
+  valP . . . . . . . . . . . . .	DWord	 bp + 00000008
+  valQ . . . . . . . . . . . . .	DWord	 bp + 0000000C
+Decrypt  . . . . . . . . . . . .	P Near	 000000B6 _TEXT	Length= 00000016 Public C
+  valD . . . . . . . . . . . . .	DWord	 bp + 00000008
+  valN . . . . . . . . . . . . .	DWord	 bp + 0000000C
+  data . . . . . . . . . . . . .	DWord	 bp + 00000010
+Encryption . . . . . . . . . . .	P Near	 0000009A _TEXT	Length= 0000001C Public C
+  valE . . . . . . . . . . . . .	DWord	 bp + 00000008
+  valN . . . . . . . . . . . . .	DWord	 bp + 0000000C
+  Data . . . . . . . . . . . . .	DWord	 bp + 00000010
+Entrypoint . . . . . . . . . . .	P Near	 0000010B _TEXT	Length= 000000E4 Public C
+  RandP  . . . . . . . . . . . .	DWord	 bp + 00000008
+  RandQ  . . . . . . . . . . . .	DWord	 bp + 0000000C
+  Data . . . . . . . . . . . . .	DWord	 bp + 00000010
+  Mode . . . . . . . . . . . . .	DWord	 bp + 00000014
+  L1 . . . . . . . . . . . . . .	L Near	 000001BD _TEXT	
+  L3 . . . . . . . . . . . . . .	L Near	 000001D7 _TEXT	
+  L4 . . . . . . . . . . . . . .	L Near	 000001ED _TEXT	
+FormulaForPrime  . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000010 Public C
+  val  . . . . . . . . . . . . .	DWord	 bp + 00000008
+GCDCal . . . . . . . . . . . . .	P Near	 00000010 _TEXT	Length= 00000025 Public C
+  A  . . . . . . . . . . . . . .	DWord	 bp + 00000008
+  B  . . . . . . . . . . . . . .	DWord	 bp + 0000000C
+  L1 . . . . . . . . . . . . . .	L Near	 00000018 _TEXT	
+  L2 . . . . . . . . . . . . . .	L Near	 00000030 _TEXT	
+GetEncryptedData . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+PrivateKey . . . . . . . . . . .	P Near	 0000007C _TEXT	Length= 0000001E Public C
+  valP . . . . . . . . . . . . .	DWord	 bp + 00000008
+  valQ . . . . . . . . . . . . .	DWord	 bp + 0000000C
+  valE . . . . . . . . . . . . .	DWord	 bp + 00000010
+PublicKey  . . . . . . . . . . .	P Near	 00000035 _TEXT	Length= 00000047 Public C
+  val  . . . . . . . . . . . . .	DWord	 bp + 00000008
+  val1 . . . . . . . . . . . . .	DWord	 bp + 0000000C
+  L1 . . . . . . . . . . . . . .	L Near	 00000055 _TEXT	
+  L2 . . . . . . . . . . . . . .	L Near	 00000074 _TEXT	
+TRYERROR . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+fileProcessing . . . . . . . . .	P Near	 000000E4 _TEXT	Length= 00000027 Public C
+  Data . . . . . . . . . . . . .	DWord	 bp + 00000008
+  L2 . . . . . . . . . . . . . .	L Near	 000000FA _TEXT	
+gcd  . . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+powerP . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000001h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+DataTobeProcessed  . . . . . . .	DWord	 00000014 _DATA	
+D  . . . . . . . . . . . . . . .	DWord	 00000010 _DATA	
+ENDING_POWER . . . . . . . . . .	Number	 0000000Ah   
+EncryptedData  . . . . . . . . .	DWord	 00000024 _DATA	
+E  . . . . . . . . . . . . . . .	DWord	 0000000C _DATA	
+N  . . . . . . . . . . . . . . .	DWord	 00000008 _DATA	
+OUT_WIDTH  . . . . . . . . . . .	Number	 00000008h   
+PHAYI  . . . . . . . . . . . . .	DWord	 00000018 _DATA	
+PlainText  . . . . . . . . . . .	DWord	 00000028 _DATA	
+P  . . . . . . . . . . . . . . .	DWord	 00000000 _DATA	
+Q  . . . . . . . . . . . . . . .	DWord	 00000004 _DATA	
+TestData . . . . . . . . . . . .	DWord	 0000001C _DATA	
+Testval  . . . . . . . . . . . .	DWord	 00000020 _DATA	
+
+	   0 Warnings
+	   0 Errors

@@ -1,0 +1,8 @@
+﻿  Performing Custom Build Tools
+  Microsoft (R) Macro Assembler Version 14.16.27026.1
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+   Assembling: C:\Users\Dell\Desktop\coal-project-master\RSAGUI\Rsa.asm
+  stdafx.cpp
+  RSAGUI.cpp
+  RSAGUI.vcxproj -> C:\Users\Dell\Desktop\coal-project-master\Debug\RSAGUI.exe
